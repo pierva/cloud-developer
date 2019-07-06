@@ -17,36 +17,46 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // Get a specific resource
-router.get('/:id', 
+router.get('/:id',
     async (req: Request, res: Response) => {
     let { id } = req.params;
-    const item = await FeedItem.findByPk(id);
-    res.send(item);
+    if(id) {
+        const item = await FeedItem.findByPk(id);
+        if (item) {
+            res.status(201).send(item);
+        }
+        else {
+            res.status(401).send({error: 'Not found'});
+        }
+
+    } else {
+        res.send(400).send({error: 'ID required'});
+    }
 });
 
 // update a specific resource
-router.patch('/:id', 
-    requireAuth, 
+router.patch('/:id',
+    requireAuth,
     async (req: Request, res: Response) => {
         //@TODO try it yourself
-        res.send(500).send("not implemented")
+        res.send(500).send('Not implemented');
 });
 
 
 // Get a signed url to put a new item in the bucket
-router.get('/signed-url/:fileName', 
-    requireAuth, 
+router.get('/signed-url/:fileName',
+    requireAuth,
     async (req: Request, res: Response) => {
     let { fileName } = req.params;
     const url = AWS.getPutSignedUrl(fileName);
     res.status(201).send({url: url});
 });
 
-// Post meta data and the filename after a file is uploaded 
+// Post meta data and the filename after a file is uploaded
 // NOTE the file name is they key name in the s3 bucket.
 // body : {caption: string, fileName: string};
-router.post('/', 
-    requireAuth, 
+router.post('/',
+    requireAuth,
     async (req: Request, res: Response) => {
     const caption = req.body.caption;
     const fileName = req.body.url;
@@ -61,15 +71,21 @@ router.post('/',
         return res.status(400).send({ message: 'File url is required' });
     }
 
-    const item = await new FeedItem({
+    try {
+        const item = await new FeedItem({
             caption: caption,
             url: fileName
-    });
+         });
 
-    const saved_item = await item.save();
+         const saved_item = await item.save();
 
-    saved_item.url = AWS.getGetSignedUrl(saved_item.url);
-    res.status(201).send(saved_item);
+         saved_item.url = AWS.getGetSignedUrl(saved_item.url);
+         res.status(201).send(item);
+    } catch(e) {
+        console.log(e);
+    }
+
+
 });
 
 export const FeedRouter: Router = router;
