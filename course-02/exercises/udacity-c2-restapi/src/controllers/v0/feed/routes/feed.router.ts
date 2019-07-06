@@ -39,7 +39,28 @@ router.patch('/:id',
     requireAuth,
     async (req: Request, res: Response) => {
         //@TODO try it yourself
-        res.send(500).send('Not implemented');
+        let { id } = req.params;
+        const caption = req.body.caption;
+        const fileName = req.body.url;
+        if(id){
+            if (caption && fileName){
+                const item = await FeedItem.findByPk(id);
+                if(item) {
+                    item.update({
+                        caption: caption,
+                        url: fileName
+                    })
+                    .then((updatedItem) => {res.status(201).send(updatedItem)});
+                } else {
+                    res.status(404).send({error: 'Item not found'});
+                }
+
+            } else {
+                res.status(400).send({error: 'Missing something'});
+            }
+        } else {
+            res.send(400).send("ID is required");
+        }
 });
 
 
